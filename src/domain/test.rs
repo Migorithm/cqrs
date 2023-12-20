@@ -3,6 +3,7 @@ use crate::services::BankAccountServices;
 use super::events::BankAccountEvent;
 use super::BankAccountCommand::*;
 use super::*;
+
 use cqrs_es::test::TestFramework;
 
 type AccountTestFramework = TestFramework<BankAccount>;

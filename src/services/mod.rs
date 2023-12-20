@@ -1,3 +1,6 @@
+pub mod query;
+#[cfg(test)]
+pub mod test;
 pub struct BankAccountServices;
 
 impl BankAccountServices {
