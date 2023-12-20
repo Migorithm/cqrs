@@ -9,6 +9,8 @@ use self::{commands::BankAccountCommand, error::BankAccountError, events::BankAc
 pub mod commands;
 pub mod error;
 pub mod events;
+#[cfg(test)]
+pub mod test;
 
 #[derive(Serialize, Default, Deserialize)]
 pub struct BankAccount {
@@ -33,7 +35,26 @@ impl Aggregate for BankAccount {
         command: Self::Command,
         services: &Self::Services,
     ) -> Result<Vec<Self::Event>, Self::Error> {
-        todo!()
+        match command {
+            BankAccountCommand::DepositMoney { amount } => {
+                let balance = self.balance + amount;
+                Ok(vec![BankAccountEvent::CustomerDepositedMoney {
+                    amount,
+                    balance,
+                }])
+            }
+            BankAccountCommand::WithdrawMoney { amount } => {
+                let balance = self.balance - amount;
+                if balance < 0_f64 {
+                    return Err(BankAccountError("funds not available".into()));
+                }
+                Ok(vec![BankAccountEvent::CustomerWithdrewCash {
+                    amount,
+                    balance,
+                }])
+            }
+            _ => Ok(vec![]),
+        }
     }
 
     // Note that the apply function has no return value.

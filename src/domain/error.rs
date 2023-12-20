@@ -1,5 +1,5 @@
-#[derive(Debug)]
-pub struct BankAccountError(String);
+#[derive(Debug, PartialEq)]
+pub struct BankAccountError(pub String);
 
 impl std::fmt::Display for BankAccountError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
