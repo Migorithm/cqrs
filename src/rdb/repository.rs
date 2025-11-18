@@ -57,7 +57,11 @@ pub struct SqlRepository<A: TAggregateES> {
 impl<A: TAggregateES + TAggregateMetadata> SqlRepository<A> {
     pub fn new() -> Self {
         Self {
-            executor: Default::default(),
+            executor: InMemoryDB {
+                table: vec![(Kind::Event, vec![]), (Kind::Snapshot, vec![])]
+                    .into_iter()
+                    .collect(),
+            },
             _phantom: Default::default(),
         }
     }
