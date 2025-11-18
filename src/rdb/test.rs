@@ -28,10 +28,10 @@ impl Account {
         aggregate
     }
 
-    fn verify_password(&self, plain_text: &str) -> Result<(), String> {
+    fn verify_password(&self, plain_text: &str) -> Result<(), Error> {
         Ok(())
     }
-    pub(crate) fn sign_in(&mut self, cmd: SignInAccount) -> Result<(), String> {
+    pub(crate) fn sign_in(&mut self, cmd: SignInAccount) -> Result<(), Error> {
         self.verify_password(&cmd.password)?;
         self.raise_event(AccountEvent::SignedIn {
             email: cmd.email,
@@ -123,5 +123,93 @@ impl TEvent for AccountEvent {
 
     fn aggregate_type(&self) -> String {
         "Account".to_string()
+    }
+}
+
+#[derive(Debug)]
+pub struct Error;
+
+#[cfg(test)]
+
+mod test_account {
+
+    use crate::{
+        aggregate::TAggregateMetadata,
+        event_store::TEventStore,
+        rdb::{
+            repository::{InMemoryDB, SqlRepository},
+            test::{Account, CreateAccount, SignInAccount},
+        },
+    };
+
+    #[tokio::test]
+    async fn test_commit() {
+        let repo = SqlRepository::new();
+        let aggregate = Account::create_account(CreateAccount {
+            email: "test_email@mail.com".to_string(),
+            password: "test_password".to_string(),
+        });
+
+        repo.commit(&aggregate).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_load_aggregate() {
+        // given
+        let repo = SqlRepository::new();
+        let aggregate = Account::create_account(CreateAccount {
+            email: "test_email@mail.com".to_string(),
+            password: "test_password".to_string(),
+        });
+        repo.commit(&aggregate).await.unwrap();
+
+        // when
+        let account_aggregate = repo
+            .load_aggregate(aggregate.id.to_string().as_str())
+            .await
+            .expect("Shouldn't fail!");
+
+        //then
+        assert_eq!(account_aggregate.sequence(), 1);
+        assert_eq!(account_aggregate.name, "test_email@mail.com".to_string());
+        assert_ne!(
+            account_aggregate.hashed_password,
+            "test_password".to_string()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_command_on_existing_aggregate() {
+        // given
+        let repo = SqlRepository::new();
+        let aggregate = Account::create_account(CreateAccount {
+            email: "test_email@mail.com".to_string(),
+            password: "test_password".to_string(),
+        });
+
+        repo.commit(&aggregate).await.unwrap();
+
+        let mut account_aggregate = repo
+            .load_aggregate(aggregate.id.to_string().as_str())
+            .await
+            .expect("Shouldn't fail!");
+
+        // when
+        account_aggregate
+            .sign_in(SignInAccount {
+                email: "test_email@mail.com".to_string(),
+                password: "test_password".to_string(),
+            })
+            .unwrap();
+
+        repo.commit(&account_aggregate).await.unwrap();
+
+        // then
+        let updated_account_aggregate = repo
+            .load_aggregate(aggregate.id.to_string().as_str())
+            .await
+            .expect("Shouldn't fail!");
+
+        assert_eq!(updated_account_aggregate.sequence(), 2);
     }
 }

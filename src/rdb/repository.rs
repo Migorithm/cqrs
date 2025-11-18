@@ -1,17 +1,18 @@
 use std::{collections::HashMap, marker::PhantomData};
 
 use chrono::{DateTime, Utc};
-use serde_json::{from_str, from_value, json};
+use serde_json::{from_str, json};
 
 use crate::{
     aggregate::{TAggregateES, TAggregateMetadata},
     event::{EventEnvolope, TEvent},
     event_store::TEventStore,
 };
-
-struct InMemoryDB {
+#[derive(Default)]
+pub struct InMemoryDB {
     table: HashMap<Kind, Vec<Table>>,
 }
+
 #[derive(PartialEq, Eq)]
 enum Kind {
     Event,
@@ -54,9 +55,9 @@ pub struct SqlRepository<A: TAggregateES> {
 }
 
 impl<A: TAggregateES + TAggregateMetadata> SqlRepository<A> {
-    pub fn new(executor: InMemoryDB) -> Self {
+    pub fn new() -> Self {
         Self {
-            executor,
+            executor: Default::default(),
             _phantom: Default::default(),
         }
     }
