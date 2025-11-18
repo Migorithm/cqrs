@@ -1,6 +1,4 @@
-use ruva::ruva_core;
-use ruva_core::prelude::Serialize;
-use serde::de::DeserializeOwned;
+use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 
 pub trait TEvent:

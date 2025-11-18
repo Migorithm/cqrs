@@ -1,8 +1,7 @@
-use std::{marker::PhantomData, sync::Arc};
+use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
-use ruva::ruva_core;
-use ruva_core::{prepare_bulk_operation, rdb::executor::SQLExecutor};
-use serde_json::{from_value, json, Value};
+use chrono::{DateTime, Utc};
+use serde_json::{Value, from_value, json};
 use tokio::sync::RwLock;
 
 use crate::{
@@ -10,7 +9,35 @@ use crate::{
     event::{EventEnvolope, TEvent},
     event_store::TEventStore,
 };
-use sqlx::Row;
+
+struct InMemoryDB {
+    table: HashMap<Kind, Vec<Table>>,
+}
+enum Kind {
+    Event,
+    Snapshot,
+}
+
+enum Table {
+    Event {
+        aggregate_type: String,
+        aggregate_id: String,
+        sequence: u64,
+        event_type: String,
+        event_version: String,
+        payload: String,
+        timestamp: DateTime<Utc>,
+    },
+    Snapshot {
+        aggregate_type: String,
+        aggregate_id: String,
+        last_sequnece: u64,
+        current_snapshot: u64,
+        payload: String,
+        timestamp: DateTime<Utc>,
+    },
+}
+
 pub struct SqlRepository<A: TAggregateES> {
     pub executor: Arc<RwLock<SQLExecutor>>,
     _phantom: PhantomData<A>,
@@ -46,7 +73,7 @@ impl<A: TAggregateES + TAggregateMetadata> SqlRepository<A> {
 }
 
 impl<A: TAggregateES + TAggregateMetadata> TEventStore<A> for SqlRepository<A> {
-    async fn load_events(&self, aggregate_id: &str) -> Result<Vec<EventEnvolope>, A::Error> {
+    async fn load_events(&self, aggregate_id: &str) -> Result<Vec<EventEnvolope>, String> {
         Ok(sqlx::query(
             r#"
             SELECT
@@ -74,7 +101,7 @@ impl<A: TAggregateES + TAggregateMetadata> TEventStore<A> for SqlRepository<A> {
         .unwrap())
     }
 
-    async fn load_aggregate(&self, aggregate_id: &str) -> Result<A, A::Error> {
+    async fn load_aggregate(&self, aggregate_id: &str) -> Result<A, String> {
         let events = self.load_events(aggregate_id).await?;
         let mut aggregate = A::default();
         // current sequence should be the same as the number of events you can fetch
@@ -86,49 +113,49 @@ impl<A: TAggregateES + TAggregateMetadata> TEventStore<A> for SqlRepository<A> {
         Ok(aggregate)
     }
 
-    async fn commit(&self, aggregate: &A) -> Result<(), A::Error> {
-        let events = Self::wrap_events(aggregate);
-        if events.is_empty() {
-            return Ok(());
-        }
-        prepare_bulk_operation!(
-            &events,
-            aggregate_type: String,
-            aggregate_id: String,
-            sequence:i64,
-            event_type: String,
-            event_version: String,
-            payload: Value
-        );
-        sqlx::query(
-            r#"
-            INSERT INTO events (
-                aggregate_type ,
-                aggregate_id   ,
-                sequence       ,
-                event_type     ,
-                event_version  ,
-                payload        
-            )
-            VALUES (
-                UNNEST($1::text[]),
-                UNNEST($2::text[]),
-                UNNEST($3::bigint[]),
-                UNNEST($4::text[]),
-                UNNEST($5::text[]),
-                UNNEST($6::jsonb[])
-            )
-            "#,
-        )
-        .bind(&aggregate_type)
-        .bind(&aggregate_id)
-        .bind(&sequence)
-        .bind(&event_type)
-        .bind(&event_version)
-        .bind(&payload)
-        .execute(self.executor.read().await.connection())
-        .await
-        .unwrap();
+    async fn commit(&self, aggregate: &A) -> Result<(), String> {
+        // let events = Self::wrap_events(aggregate);
+        // if events.is_empty() {
+        //     return Ok(());
+        // }
+        // prepare_bulk_operation!(
+        //     &events,
+        //     aggregate_type: String,
+        //     aggregate_id: String,
+        //     sequence:i64,
+        //     event_type: String,
+        //     event_version: String,
+        //     payload: Value
+        // );
+        // sqlx::query(
+        //     r#"
+        //     INSERT INTO events (
+        //         aggregate_type ,
+        //         aggregate_id   ,
+        //         sequence       ,
+        //         event_type     ,
+        //         event_version  ,
+        //         payload
+        //     )
+        //     VALUES (
+        //         UNNEST($1::text[]),
+        //         UNNEST($2::text[]),
+        //         UNNEST($3::bigint[]),
+        //         UNNEST($4::text[]),
+        //         UNNEST($5::text[]),
+        //         UNNEST($6::jsonb[])
+        //     )
+        //     "#,
+        // )
+        // .bind(&aggregate_type)
+        // .bind(&aggregate_id)
+        // .bind(&sequence)
+        // .bind(&event_type)
+        // .bind(&event_version)
+        // .bind(&payload)
+        // .execute(self.executor.read().await.connection())
+        // .await
+        // .unwrap();
         Ok(())
     }
 }

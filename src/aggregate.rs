@@ -1,11 +1,7 @@
-use ruva::ruva_core;
-use ruva_core::responses::ApplicationError;
-
 use crate::event::TEvent;
 
 pub trait TAggregateES: Default + Sync + Send + 'static {
     type Event: TEvent;
-    type Error: ApplicationError;
 
     fn apply(&mut self, event: Self::Event);
 
