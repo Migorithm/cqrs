@@ -10,6 +10,8 @@ pub trait TEventStore<A: TAggregateES>: Sync + Send {
         aggregate_id: &str,
     ) -> impl std::future::Future<Output = Result<A, String>> + Send;
 
-    fn commit(&self, aggregate: &A)
-    -> impl std::future::Future<Output = Result<(), String>> + Send;
+    fn commit(
+        &mut self,
+        aggregate: &A,
+    ) -> impl std::future::Future<Output = Result<(), String>> + Send;
 }

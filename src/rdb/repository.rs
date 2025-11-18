@@ -13,7 +13,7 @@ pub struct InMemoryDB {
     table: HashMap<Kind, Vec<Table>>,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Hash)]
 enum Kind {
     Event,
     Snapshot,
@@ -114,11 +114,20 @@ impl<A: TAggregateES + TAggregateMetadata> TEventStore<A> for SqlRepository<A> {
         Ok(aggregate)
     }
 
-    async fn commit(&self, aggregate: &A) -> Result<(), String> {
+    async fn commit(&mut self, aggregate: &A) -> Result<(), String> {
         let events = Self::extract_events(aggregate);
         if events.is_empty() {
             return Ok(());
         }
+
+        let Some(all_events) = self.executor.table.get_mut(&Kind::Event) else {
+            return Ok(());
+        };
+        all_events.extend(events.into_iter().map(|d| Table::Event {
+            envelope: d,
+            timestamp: Utc::now(),
+        }));
+
         // prepare_bulk_operation!(
         //     &events,
         //     aggregate_type: String,

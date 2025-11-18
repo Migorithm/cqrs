@@ -144,7 +144,7 @@ mod test_account {
 
     #[tokio::test]
     async fn test_commit() {
-        let repo = SqlRepository::new();
+        let mut repo = SqlRepository::new();
         let aggregate = Account::create_account(CreateAccount {
             email: "test_email@mail.com".to_string(),
             password: "test_password".to_string(),
@@ -156,7 +156,7 @@ mod test_account {
     #[tokio::test]
     async fn test_load_aggregate() {
         // given
-        let repo = SqlRepository::new();
+        let mut repo = SqlRepository::new();
         let aggregate = Account::create_account(CreateAccount {
             email: "test_email@mail.com".to_string(),
             password: "test_password".to_string(),
@@ -181,7 +181,7 @@ mod test_account {
     #[tokio::test]
     async fn test_command_on_existing_aggregate() {
         // given
-        let repo = SqlRepository::new();
+        let mut repo = SqlRepository::new();
         let aggregate = Account::create_account(CreateAccount {
             email: "test_email@mail.com".to_string(),
             password: "test_password".to_string(),
