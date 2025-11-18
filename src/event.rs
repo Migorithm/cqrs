@@ -1,5 +1,4 @@
 use serde::{Serialize, de::DeserializeOwned};
-use serde_json::Value;
 
 pub trait TEvent:
     Serialize + DeserializeOwned + Clone + PartialEq + std::fmt::Debug + Sync + Send
@@ -11,11 +10,12 @@ pub trait TEvent:
     fn aggregate_type(&self) -> String;
 }
 
+#[derive(Clone)]
 pub struct EventEnvolope {
     pub aggregate_type: String,
     pub aggregate_id: String,
     pub sequence: i64,
     pub event_type: String,
     pub event_version: String,
-    pub payload: Value,
+    pub payload: String,
 }
