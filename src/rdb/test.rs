@@ -1,6 +1,4 @@
-use crate::aggregate::TAggregateMetadata;
-
-use crate::{aggregate::TAggregateES, event::TEvent};
+use crate::{aggregate::TAggregate, event::TEvent};
 
 use serde::{Deserialize, Serialize};
 
@@ -41,7 +39,7 @@ impl Account {
     }
 }
 
-impl TAggregateES for Account {
+impl TAggregate for Account {
     type Event = AccountEvent;
 
     fn apply(&mut self, event: Self::Event) {
@@ -68,9 +66,6 @@ impl TAggregateES for Account {
     fn events(&self) -> &Vec<Self::Event> {
         &self.events
     }
-}
-
-impl TAggregateMetadata for Account {
     fn aggregate_type(&self) -> String {
         "Account".to_string()
     }
@@ -134,7 +129,7 @@ pub struct Error;
 mod test_account {
 
     use crate::{
-        aggregate::TAggregateMetadata,
+        aggregate::TAggregate,
         event_store::TEventStore,
         rdb::{
             repository::SqlRepository,

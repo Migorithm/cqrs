@@ -1,6 +1,6 @@
-use crate::{aggregate::TAggregateES, event::EventEnvolope};
+use crate::{aggregate::TAggregate, event::EventEnvolope};
 
-pub trait TEventStore<A: TAggregateES>: Sync + Send {
+pub trait TEventStore<A: TAggregate>: Sync + Send {
     fn load_events(
         &self,
         aggregate_id: &str,

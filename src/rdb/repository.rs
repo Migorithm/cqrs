@@ -1,23 +1,23 @@
-use std::{collections::HashMap, marker::PhantomData};
+use std::marker::PhantomData;
 
 use chrono::{DateTime, Utc};
 use serde_json::{from_str, json};
 
 use crate::{
-    aggregate::{TAggregateES, TAggregateMetadata},
+    aggregate::TAggregate,
     event::{EventEnvolope, TEvent},
     event_store::TEventStore,
 };
 #[derive(Default)]
 pub struct InMemoryDB {
-    table: Vec<Table>,
+    table: Vec<EventTable>,
 }
 
-struct Table {
+struct EventTable {
     envelope: EventEnvolope,
     timestamp: DateTime<Utc>,
 }
-impl Table {
+impl EventTable {
     fn aggregate_id(&self) -> &str {
         &self.envelope.aggregate_id
     }
@@ -27,12 +27,12 @@ impl Table {
     }
 }
 
-pub struct SqlRepository<A: TAggregateES> {
+pub struct SqlRepository<A: TAggregate> {
     executor: InMemoryDB,
     _phantom: PhantomData<A>,
 }
 
-impl<A: TAggregateES + TAggregateMetadata> SqlRepository<A> {
+impl<A: TAggregate> SqlRepository<A> {
     pub fn new() -> Self {
         Self {
             executor: InMemoryDB { table: vec![] },
@@ -61,7 +61,7 @@ impl<A: TAggregateES + TAggregateMetadata> SqlRepository<A> {
     }
 }
 
-impl<A: TAggregateES + TAggregateMetadata> TEventStore<A> for SqlRepository<A> {
+impl<A: TAggregate> TEventStore<A> for SqlRepository<A> {
     async fn load_events(&self, agg_id: &str) -> Result<Vec<EventEnvolope>, String> {
         Ok(self
             .executor
@@ -97,7 +97,7 @@ impl<A: TAggregateES + TAggregateMetadata> TEventStore<A> for SqlRepository<A> {
 
         self.executor
             .table
-            .extend(events.into_iter().map(|envelope| Table {
+            .extend(events.into_iter().map(|envelope| EventTable {
                 envelope,
                 timestamp: Utc::now(),
             }));
