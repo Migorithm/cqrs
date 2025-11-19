@@ -137,7 +137,7 @@ mod test_account {
         aggregate::TAggregateMetadata,
         event_store::TEventStore,
         rdb::{
-            repository::{InMemoryDB, SqlRepository},
+            repository::SqlRepository,
             test::{Account, CreateAccount, SignInAccount},
         },
     };

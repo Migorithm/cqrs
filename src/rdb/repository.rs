@@ -10,42 +10,20 @@ use crate::{
 };
 #[derive(Default)]
 pub struct InMemoryDB {
-    table: HashMap<Kind, Vec<Table>>,
+    table: Vec<Table>,
 }
 
-#[derive(PartialEq, Eq, Hash)]
-enum Kind {
-    Event,
-    Snapshot,
-}
-
-enum Table {
-    Event {
-        envelope: EventEnvolope,
-        timestamp: DateTime<Utc>,
-    },
-    Snapshot {
-        aggregate_type: String,
-        aggregate_id: String,
-        last_sequnece: u64,
-        current_snapshot: u64,
-        payload: String,
-        timestamp: DateTime<Utc>,
-    },
+struct Table {
+    envelope: EventEnvolope,
+    timestamp: DateTime<Utc>,
 }
 impl Table {
     fn aggregate_id(&self) -> &str {
-        match self {
-            Table::Event { envelope, .. } => &envelope.aggregate_id,
-            Table::Snapshot { aggregate_id, .. } => &aggregate_id,
-        }
+        &self.envelope.aggregate_id
     }
 
     fn envelope(&self) -> Option<&EventEnvolope> {
-        match self {
-            Table::Event { envelope, .. } => Some(envelope),
-            _ => None,
-        }
+        Some(&self.envelope)
     }
 }
 
@@ -57,11 +35,7 @@ pub struct SqlRepository<A: TAggregateES> {
 impl<A: TAggregateES + TAggregateMetadata> SqlRepository<A> {
     pub fn new() -> Self {
         Self {
-            executor: InMemoryDB {
-                table: vec![(Kind::Event, vec![]), (Kind::Snapshot, vec![])]
-                    .into_iter()
-                    .collect(),
-            },
+            executor: InMemoryDB { table: vec![] },
             _phantom: Default::default(),
         }
     }
@@ -93,16 +67,13 @@ impl<A: TAggregateES + TAggregateMetadata> TEventStore<A> for SqlRepository<A> {
             .executor
             .table
             .iter()
-            .map(|(_, table)| {
-                let mut events: Vec<EventEnvolope> = vec![];
-                for rec in table {
-                    if rec.aggregate_id() == agg_id {
-                        events.push(rec.envelope().cloned().unwrap())
-                    }
+            .filter_map(|rec| {
+                if rec.aggregate_id() == agg_id {
+                    Some(rec.envelope().cloned().unwrap())
+                } else {
+                    None
                 }
-                events
             })
-            .flatten()
             .collect())
     }
 
@@ -124,13 +95,12 @@ impl<A: TAggregateES + TAggregateMetadata> TEventStore<A> for SqlRepository<A> {
             return Ok(());
         }
 
-        let Some(all_events) = self.executor.table.get_mut(&Kind::Event) else {
-            return Ok(());
-        };
-        all_events.extend(events.into_iter().map(|d| Table::Event {
-            envelope: d,
-            timestamp: Utc::now(),
-        }));
+        self.executor
+            .table
+            .extend(events.into_iter().map(|envelope| Table {
+                envelope,
+                timestamp: Utc::now(),
+            }));
 
         // prepare_bulk_operation!(
         //     &events,
