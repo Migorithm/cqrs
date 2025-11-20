@@ -42,8 +42,8 @@ impl<A: TAggregate> SqlRepository<A> {
     }
     fn extract_events(aggregate: &A) -> Vec<EventEnvolope> {
         let mut current_sequence = aggregate.sequence();
-        let aggregate_type = aggregate.aggregate_type();
-        let aggregate_id = aggregate.aggregate_id();
+        let aggregate_type = aggregate.kind();
+        let aggregate_id = aggregate.id();
         aggregate
             .events()
             .iter()

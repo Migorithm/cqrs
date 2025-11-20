@@ -66,10 +66,10 @@ impl TAggregate for Account {
     fn events(&self) -> &Vec<Self::Event> {
         &self.events
     }
-    fn aggregate_type(&self) -> String {
+    fn kind(&self) -> String {
         "Account".to_string()
     }
-    fn aggregate_id(&self) -> String {
+    fn id(&self) -> String {
         self.id.to_string()
     }
     fn sequence(&self) -> i64 {
