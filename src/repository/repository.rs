@@ -17,6 +17,7 @@ struct EventTable {
     envelope: EventEnvolope,
     timestamp: DateTime<Utc>,
 }
+
 impl EventTable {
     fn aggregate_id(&self) -> &str {
         &self.envelope.aggregate_id
@@ -101,45 +102,6 @@ impl<A: TAggregate> TEventStore<A> for SqlRepository<A> {
                 envelope,
                 timestamp: Utc::now(),
             }));
-
-        // prepare_bulk_operation!(
-        //     &events,
-        //     aggregate_type: String,
-        //     aggregate_id: String,
-        //     sequence:i64,
-        //     event_type: String,
-        //     event_version: String,
-        //     payload: Value
-        // );
-        // sqlx::query(
-        //     r#"
-        //     INSERT INTO events (
-        //         aggregate_type ,
-        //         aggregate_id   ,
-        //         sequence       ,
-        //         event_type     ,
-        //         event_version  ,
-        //         payload
-        //     )
-        //     VALUES (
-        //         UNNEST($1::text[]),
-        //         UNNEST($2::text[]),
-        //         UNNEST($3::bigint[]),
-        //         UNNEST($4::text[]),
-        //         UNNEST($5::text[]),
-        //         UNNEST($6::jsonb[])
-        //     )
-        //     "#,
-        // )
-        // .bind(&aggregate_type)
-        // .bind(&aggregate_id)
-        // .bind(&sequence)
-        // .bind(&event_type)
-        // .bind(&event_version)
-        // .bind(&payload)
-        // .execute(self.executor.read().await.connection())
-        // .await
-        // .unwrap();
         Ok(())
     }
 }

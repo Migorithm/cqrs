@@ -131,7 +131,7 @@ mod test_account {
     use crate::{
         aggregate::TAggregate,
         event_store::TEventStore,
-        rdb::{
+        repository::{
             repository::SqlRepository,
             test::{Account, CreateAccount, SignInAccount},
         },
