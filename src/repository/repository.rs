@@ -23,8 +23,8 @@ impl EventTable {
         &self.envelope.aggregate_id
     }
 
-    fn envelope(&self) -> Option<&EventEnvolope> {
-        Some(&self.envelope)
+    fn envelope(&self) -> &EventEnvolope {
+        &self.envelope
     }
 }
 
@@ -70,7 +70,7 @@ impl<A: TAggregate> TEventStore<A> for SqlRepository<A> {
             .iter()
             .filter_map(|rec| {
                 if rec.aggregate_id() == agg_id {
-                    Some(rec.envelope().cloned().unwrap())
+                    Some(rec.envelope().clone())
                 } else {
                     None
                 }
